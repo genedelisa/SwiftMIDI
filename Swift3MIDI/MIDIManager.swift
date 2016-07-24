@@ -156,7 +156,7 @@ class MIDIManager : NSObject {
             print("destinationEndpoint \(session.destinationEndpoint())")
             print("networkName \(session.networkName)")
             print("localName \(session.localName)")
-
+            
         }
     }
     
@@ -185,7 +185,7 @@ class MIDIManager : NSObject {
     // typealias MIDIReadBlock = (UnsafePointer<MIDIPacketList>, UnsafeMutablePointer<Void>) -> Void
     // swift 3
     // typealias MIDIReadBlock = (UnsafePointer<MIDIPacketList>, UnsafeMutablePointer<Swift.Void>?) -> Swift.Void
-
+    
     
     func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
         
@@ -303,7 +303,7 @@ class MIDIManager : NSObject {
         print("MIDI Notify, messageSize= \(notification.messageSize)")
         
         switch notification.messageID {
-        
+            
         // Some aspect of the current MIDISetup has changed.  No data.  Should ignore this  message if messages 2-6 are handled.
         case .msgSetupChanged:
             print("MIDI setup changed")
@@ -312,7 +312,7 @@ class MIDIManager : NSObject {
             print(m)
             print("id \(m.messageID)")
             print("size \(m.messageSize)")
-                       break
+            break
             
             
         // A device, entity or endpoint was added. Structure is MIDIObjectAddRemoveNotification.
@@ -330,7 +330,7 @@ class MIDIManager : NSObject {
             print("parent \(m.parent)")
             print("parentType \(m.parentType)")
             showMIDIObjectType(m.parentType)
-
+            
             break
             
         // A device, entity or endpoint was removed. Structure is MIDIObjectAddRemoveNotification.
@@ -345,7 +345,7 @@ class MIDIManager : NSObject {
             print("child type \(m.childType)")
             print("parent \(m.parent)")
             print("parentType \(m.parentType)")
-
+            
             break
             
         // An object's property was changed. Structure is MIDIObjectPropertyChangeNotification.
@@ -554,7 +554,7 @@ class MIDIManager : NSObject {
     }
     
     internal func augraphSetup() {
-
+        
         var status = NewAUGraph(&self.processingGraph)
         checkError(status)
         
@@ -642,12 +642,20 @@ class MIDIManager : NSObject {
     /// loads preset into self.samplerUnit
     internal func loadSF2Preset(_ preset:UInt8)  {
         
-        // This is the MuseCore soundfont. Change it to the one you have.
-        guard let bankURL = Bundle.main().urlForResource("GeneralUser GS MuseScore v1.442", withExtension: "sf2") else {
-//            fatalError("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
-            print("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
+        
+        // this is a huge soundfont, but it is valid The MuseScore sf has problems
+        guard let bankURL = Bundle.main().urlForResource("FluidR3 GM2-2", withExtension: "SF2") else {
+            print("\"FluidR3 GM2-2.SF2\" file not found.")
             return
         }
+        
+        
+        // This is the MuseCore soundfont. Change it to the one you have.
+        //        guard let bankURL = Bundle.main().urlForResource("GeneralUser GS MuseScore v1.442", withExtension: "sf2") else {
+        ////            fatalError("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
+        //            print("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
+        //            return
+        //        }
         
         var instdata = AUSamplerInstrumentData(fileURL: Unmanaged.passUnretained(bankURL),
                                                instrumentType: UInt8(kInstrumentType_DLSPreset),

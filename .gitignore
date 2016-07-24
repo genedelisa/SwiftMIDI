@@ -16,7 +16,8 @@ xcuserdata
 DerivedData
 *.xcuserstate
 
-*.sf2
+**/*.sf2
+**/*.SF2
 
 ### Swift ###
 # Xcode
