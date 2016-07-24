@@ -33,7 +33,9 @@ class MIDIManager : NSObject {
     
     var inputPort = MIDIPortRef()
     
-    var destEndpointRef = MIDIEndpointRef()
+    var virtualSourceEndpointRef = MIDIEndpointRef()
+
+    var virtualDestinationEndpointRef = MIDIEndpointRef()
     
     var midiInputPortref = MIDIPortRef()
     
@@ -53,6 +55,8 @@ class MIDIManager : NSObject {
         
         observeNotifications()
         
+        enableNetwork()
+
         
         var notifyBlock: MIDINotifyBlock
         
@@ -104,24 +108,33 @@ class MIDIManager : NSObject {
             
             // this is the sequence's destination. Remember to set background mode in info.plist
             status = MIDIDestinationCreateWithBlock(midiClient,
-                                                    "com.rockhoppertech.VirtualDest",
-                                                    &destEndpointRef,
-                                                    readBlock)
+                                                    "Swift3MIDI.VirtualDestination",
+                                                    &virtualDestinationEndpointRef,
+                                                    MIDIPassThru)
+//                                                    readBlock)
             
             if status != noErr {
                 print("error creating virtual destination: \(status)")
                 checkError(status)
             } else {
-                print("midi virtual destination created \(destEndpointRef)")
+                print("midi virtual destination created \(virtualDestinationEndpointRef)")
             }
             
+            //use MIDIReceived to transmit MIDI messages from your virtual source to any clients connected to the virtual source
+            status = MIDISourceCreate(midiClient,
+                                      "Swift3MIDI.VirtualSource",
+                                      &virtualSourceEndpointRef
+            )
+            if status != noErr {
+                print("error creating virtual source: \(status)")
+            } else {
+                print("midi virtual source created \(virtualSourceEndpointRef)")
+            }
+
             
             connectSourcesToInputPort()
             
-            enableNetwork()
-            
             initGraph()
-            
         }
         
     }
@@ -156,7 +169,14 @@ class MIDIManager : NSObject {
             print("destinationEndpoint \(session.destinationEndpoint())")
             print("networkName \(session.networkName)")
             print("localName \(session.localName)")
-            
+
+            if let name = getDeviceName(session.sourceEndpoint()) {
+                print("source name \(name)")
+            }
+
+            if let name = getDeviceName(session.destinationEndpoint()) {
+                print("destination name \(name)")
+            }
         }
     }
     
@@ -186,6 +206,9 @@ class MIDIManager : NSObject {
     // swift 3
     // typealias MIDIReadBlock = (UnsafePointer<MIDIPacketList>, UnsafeMutablePointer<Swift.Void>?) -> Swift.Void
     
+    func MIDIPassThru(_ packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
+        MIDIReceived(virtualSourceEndpointRef, packetList)
+    }
     
     func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
         
@@ -331,6 +354,9 @@ class MIDIManager : NSObject {
             print("parentType \(m.parentType)")
             showMIDIObjectType(m.parentType)
             
+            print("childName \(getDeviceName(m.child))")
+
+            
             break
             
         // A device, entity or endpoint was removed. Structure is MIDIObjectAddRemoveNotification.
@@ -345,6 +371,9 @@ class MIDIManager : NSObject {
             print("child type \(m.childType)")
             print("parent \(m.parent)")
             print("parentType \(m.parentType)")
+            
+            print("childName \(getDeviceName(m.child))")
+
             
             break
             
@@ -471,10 +500,11 @@ class MIDIManager : NSObject {
             
             status = MusicPlayerSetTime(player, 0)
             if status != noErr {
-                print("setting time \(status)")
+                print("Error setting time \(status)")
                 return
             }
             
+            print("starting to play")
             status = MusicPlayerStart(player)
             if status != noErr {
                 print("Error starting \(status)")
@@ -544,7 +574,7 @@ class MIDIManager : NSObject {
         status = MusicSequenceSetAUGraph(musicSequence!, self.processingGraph)
         checkError(status)
         
-        status = MusicSequenceSetMIDIEndpoint(musicSequence!, self.destEndpointRef)
+        status = MusicSequenceSetMIDIEndpoint(musicSequence!, self.virtualDestinationEndpointRef)
         checkError(status)
         
         // Let's see it
@@ -671,6 +701,184 @@ class MIDIManager : NSObject {
             UInt32(sizeof(AUSamplerInstrumentData.self)))
         checkError(status)
     }
+    
+    
+    // The following are not used here. But useful.
+    
+    
+    //The system assigns unique IDs to all objects
+    func getUniqueID(_ endpoint:MIDIEndpointRef) -> (OSStatus, MIDIUniqueID) {
+        var id = MIDIUniqueID(0)
+        let s = MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &id)
+        if s != noErr {
+            print("error getting unique id \(s)")
+        }
+        return (s,id)
+    }
+    
+    func setUniqueID(_ endpoint:MIDIEndpointRef, id:MIDIUniqueID) -> OSStatus {
+        let s = MIDIObjectSetIntegerProperty(endpoint, kMIDIPropertyUniqueID, id)
+        if s != noErr {
+            print("error getting unique id \(s)")
+        }
+        return s
+    }
+    
+    
+    func getDeviceName(_ endpoint:MIDIEndpointRef) -> String? {
+        var cfs: Unmanaged<CFString>?
+        let status = MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &cfs)
+        if status != noErr {
+            print("error getting unique id \(status)")
+            checkError(status)
+        }
+        
+        if let s = cfs {
+            return s.takeRetainedValue() as String
+        }
+        
+        return nil
+    }
+    
+    func allExternalDeviceProps() {
+        
+        let n = MIDIGetNumberOfExternalDevices()
+        for i in 0 ..< n {
+            let midiDevice = MIDIGetExternalDevice(i)
+            var unmanagedProperties: Unmanaged<CFPropertyList>?
+            let status = MIDIObjectGetProperties(midiDevice, &unmanagedProperties, true)
+            checkError(status)
+            
+            if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+                if let midiDictionary = midiProperties as? NSDictionary {
+                    print("Midi properties: \(index) \n \(midiDictionary)")
+                }
+            } else {
+                print("Couldn't load properties for \(index)")
+            }
+        }
+        
+    }
+    func allDeviceProps() {
+        
+        
+        let n = MIDIGetNumberOfDevices()
+        for i in 0 ..< n {
+            let midiDevice = MIDIGetDevice(i)
+            var unmanagedProperties: Unmanaged<CFPropertyList>?
+            let status = MIDIObjectGetProperties(midiDevice, &unmanagedProperties, true)
+            checkError(status)
+            
+            if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+                if let midiDictionary = midiProperties as? NSDictionary {
+                    print("Midi properties: \(index) \n \(midiDictionary)")
+                }
+            } else {
+                print("Couldn't load properties for \(index)")
+            }
+        }
+        
+    }
+    
+    func deviceProps() {
+        let midiDevice = MIDIGetDevice(0)
+        var unmanagedProperties: Unmanaged<CFPropertyList>?
+        let status = MIDIObjectGetProperties(midiDevice, &unmanagedProperties, true)
+        checkError(status)
+        
+        if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+            if let midiDictionary = midiProperties as? NSDictionary {
+                print("Midi properties: \(index) \n \(midiDictionary)")
+            }
+        } else {
+            print("Couldn't load properties for \(index)")
+        }
+        
+    }
+    
+    
+    // MIDIManager.sharedInstance.deviceProp("name")
+    func deviceProp(_ propName:String) -> String? {
+        
+        let midiDevice = MIDIGetDevice(0)
+        var unmanagedProperties: Unmanaged<CFPropertyList>?
+        let status = MIDIObjectGetProperties(midiDevice, &unmanagedProperties, true)
+        checkError(status)
+        
+        if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+            if let midiDictionary = midiProperties as? NSDictionary {
+                print("Midi properties: \(index) \n \(midiDictionary)")
+                return midiDictionary[propName] as? String
+            }
+        } else {
+            print("Couldn't load properties for \(index)")
+        }
+        return nil
+    }
+    
+    
+    func destProps() {
+        
+        let numberOfDestinations  = MIDIGetNumberOfDestinations()
+        if (numberOfDestinations > 0)   {
+            let endpoint = MIDIGetDestination(0)
+            var entity = MIDIEntityRef(0)
+            MIDIEndpointGetEntity(endpoint, &entity)
+            var unmanagedProperties: Unmanaged<CFPropertyList>?
+            let status = MIDIObjectGetProperties(entity, &unmanagedProperties, true)
+            checkError(status)
+            
+            if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+                if let midiDictionary = midiProperties as? NSDictionary {
+                    print("Midi properties: \(index) \n \(midiDictionary)")
+                }
+            } else {
+                print("Couldn't load properties for \(index)")
+            }
+        }
+        
+    }
+    func allDestinationProps() {
+        
+        let numberOfDestinations  = MIDIGetNumberOfDestinations()
+        for i in 0 ..< numberOfDestinations {
+            let endpoint = MIDIGetDestination(i)
+            var entity = MIDIEntityRef(0)
+            MIDIEndpointGetEntity(endpoint, &entity)
+            var unmanagedProperties: Unmanaged<CFPropertyList>?
+            let status = MIDIObjectGetProperties(entity, &unmanagedProperties, true)
+            checkError(status)
+            
+            if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+                if let midiDictionary = midiProperties as? NSDictionary {
+                    print("Midi properties: \(index) \n \(midiDictionary)\n")
+                }
+            } else {
+                print("Couldn't load properties for \(index)")
+            }
+        }
+    }
+    
+    
+    func propertyValue(_ endpoint:MIDIEndpointRef, propName:String) -> String? {
+        var entity = MIDIEntityRef(0)
+        MIDIEndpointGetEntity(endpoint, &entity)
+        var unmanagedProperties: Unmanaged<CFPropertyList>?
+        let status = MIDIObjectGetProperties(entity, &unmanagedProperties, true)
+        checkError(status)
+        
+        if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
+            if let midiDictionary = midiProperties as? NSDictionary {
+                print("Midi properties: \(index) \n \(midiDictionary)")
+                return midiDictionary[propName] as? String
+            }
+        } else {
+            print("Couldn't load properties for \(index)")
+        }
+        
+        return nil
+    }
+
     
     
     
