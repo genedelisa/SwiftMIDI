@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		B05107281D45158F005E88A7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107271D45158F005E88A7 /* AppDelegate.swift */; };
 		B051072A1D45158F005E88A7 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107291D45158F005E88A7 /* ViewController.swift */; };
-		B051072D1D45158F005E88A7 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = B051072C1D45158F005E88A7 /* README.md */; };
 		B051072F1D45158F005E88A7 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = B051072E1D45158F005E88A7 /* LICENSE */; };
 		B05107311D45158F005E88A7 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = B05107301D45158F005E88A7 /* .gitignore */; };
 		B05107331D45158F005E88A7 /* .travis.yml in Resources */ = {isa = PBXBuildFile; fileRef = B05107321D45158F005E88A7 /* .travis.yml */; };
@@ -17,6 +16,8 @@
 		B05107381D45158F005E88A7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B05107371D45158F005E88A7 /* Assets.xcassets */; };
 		B051073B1D45158F005E88A7 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B05107391D45158F005E88A7 /* LaunchScreen.storyboard */; };
 		B05107461D45158F005E88A7 /* Swift3MIDITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107451D45158F005E88A7 /* Swift3MIDITests.swift */; };
+		B05107511D4515AB005E88A7 /* MIDIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107501D4515AB005E88A7 /* MIDIManager.swift */; };
+		B05107531D4515DF005E88A7 /* GeneralUser GS MuseScore v1.442.sf2 in Resources */ = {isa = PBXBuildFile; fileRef = B05107521D4515DF005E88A7 /* GeneralUser GS MuseScore v1.442.sf2 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,8 @@
 		B05107411D45158F005E88A7 /* Swift3MIDITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Swift3MIDITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B05107451D45158F005E88A7 /* Swift3MIDITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Swift3MIDITests.swift; sourceTree = "<group>"; };
 		B05107471D45158F005E88A7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B05107501D4515AB005E88A7 /* MIDIManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MIDIManager.swift; sourceTree = "<group>"; };
+		B05107521D4515DF005E88A7 /* GeneralUser GS MuseScore v1.442.sf2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GeneralUser GS MuseScore v1.442.sf2"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +88,8 @@
 		B05107261D45158F005E88A7 /* Swift3MIDI */ = {
 			isa = PBXGroup;
 			children = (
+				B05107521D4515DF005E88A7 /* GeneralUser GS MuseScore v1.442.sf2 */,
+				B05107501D4515AB005E88A7 /* MIDIManager.swift */,
 				B05107271D45158F005E88A7 /* AppDelegate.swift */,
 				B05107291D45158F005E88A7 /* ViewController.swift */,
 				B05107341D45158F005E88A7 /* Main.storyboard */,
@@ -208,6 +213,7 @@
 				B051072F1D45158F005E88A7 /* LICENSE in Resources */,
 				B051073B1D45158F005E88A7 /* LaunchScreen.storyboard in Resources */,
 				B05107361D45158F005E88A7 /* Main.storyboard in Resources */,
+				B05107531D4515DF005E88A7 /* GeneralUser GS MuseScore v1.442.sf2 in Resources */,
 				B05107381D45158F005E88A7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -226,8 +232,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B051072D1D45158F005E88A7 /* README.md in Sources */,
 				B051072A1D45158F005E88A7 /* ViewController.swift in Sources */,
+				B05107511D4515AB005E88A7 /* MIDIManager.swift in Sources */,
 				B05107281D45158F005E88A7 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
