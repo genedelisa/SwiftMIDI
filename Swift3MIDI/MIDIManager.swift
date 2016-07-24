@@ -127,18 +127,18 @@ class MIDIManager : NSObject {
     }
     
     func observeNotifications() {
-        NotificationCenter.default().addObserver(self,
+        NotificationCenter.default.addObserver(self,
                                                  selector: #selector(midiNetworkChanged(notification:)),
-                                                 name:MIDINetworkNotificationSessionDidChange,
+                                                 name:NSNotification.Name(rawValue: MIDINetworkNotificationSessionDidChange),
                                                  object: nil)
-        NotificationCenter.default().addObserver(self,
+        NotificationCenter.default.addObserver(self,
                                                  selector: #selector(midiNetworkContactsChanged(notification:)),
-                                                 name:MIDINetworkNotificationContactsDidChange,
+                                                 name:NSNotification.Name(rawValue: MIDINetworkNotificationContactsDidChange),
                                                  object: nil)
     }
     
     deinit {
-        NotificationCenter.default().removeObserver(self)
+        NotificationCenter.default.removeObserver(self)
         MIDIClientDispose(self.midiClient)
     }
     
@@ -644,14 +644,13 @@ class MIDIManager : NSObject {
         
         
         // this is a huge soundfont, but it is valid The MuseScore sf has problems
-        guard let bankURL = Bundle.main().urlForResource("FluidR3 GM2-2", withExtension: "SF2") else {
-            print("\"FluidR3 GM2-2.SF2\" file not found.")
-            return
+        guard let bankURL = Bundle.main.urlForResource("FluidR3 GM2-2", withExtension: "SF2") else {
+            fatalError("\"FluidR3 GM2-2.SF2\" file not found.")
         }
         
         
         // This is the MuseCore soundfont. Change it to the one you have.
-        //        guard let bankURL = Bundle.main().urlForResource("GeneralUser GS MuseScore v1.442", withExtension: "sf2") else {
+        //        guard let bankURL = Bundle.main.urlForResource("GeneralUser GS MuseScore v1.442", withExtension: "sf2") else {
         ////            fatalError("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
         //            print("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
         //            return
@@ -669,7 +668,7 @@ class MIDIManager : NSObject {
             AudioUnitScope(kAudioUnitScope_Global),
             0,
             &instdata,
-            UInt32(sizeof(AUSamplerInstrumentData)))
+            UInt32(sizeof(AUSamplerInstrumentData.self)))
         checkError(status)
     }
     

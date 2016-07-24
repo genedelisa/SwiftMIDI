@@ -15,7 +15,10 @@
 
 
 
-An example using Core MIDI with Swift 3.
+An example using Core MIDI with Swift 3 beta 3.
+
+I'm using the [Fluid R3 GM Sounfont](https://musescore.org/en/handbook/soundfont) in this example. Use whatever Soundfont you like.
+(GeneralUser GS 1.442 has many problems)
 
 
 ## Blog post for this example.
