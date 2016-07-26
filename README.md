@@ -23,7 +23,7 @@ I'm using the [Fluid R3 GM Sounfont](https://musescore.org/en/handbook/soundfont
 
 ## Blog post for this example.
 
-[Blog post](http://www.rockhoppertech.com/blog/)
+[Blog post](http://www.rockhoppertech.com/blog/swift-3-core-midi/)
 
 
 ## Bugs
