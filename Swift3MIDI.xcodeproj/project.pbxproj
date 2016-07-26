@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B033BB471D4643460020D287 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = B033BB461D4643460020D287 /* Package.swift */; };
 		B05107281D45158F005E88A7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107271D45158F005E88A7 /* AppDelegate.swift */; };
 		B051072A1D45158F005E88A7 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05107291D45158F005E88A7 /* ViewController.swift */; };
 		B051072F1D45158F005E88A7 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = B051072E1D45158F005E88A7 /* LICENSE */; };
@@ -31,6 +32,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B033BB461D4643460020D287 /* Package.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		B05107241D45158F005E88A7 /* Swift3MIDI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Swift3MIDI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B05107271D45158F005E88A7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B05107291D45158F005E88A7 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				B05107391D45158F005E88A7 /* LaunchScreen.storyboard */,
 				B051073C1D45158F005E88A7 /* Info.plist */,
 				B051072B1D45158F005E88A7 /* Supporting Files */,
+				B033BB461D4643460020D287 /* Package.swift */,
 			);
 			path = Swift3MIDI;
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B033BB471D4643460020D287 /* Package.swift in Sources */,
 				B051072A1D45158F005E88A7 /* ViewController.swift in Sources */,
 				B05107511D4515AB005E88A7 /* MIDIManager.swift in Sources */,
 				B05107281D45158F005E88A7 /* AppDelegate.swift in Sources */,
@@ -434,6 +438,7 @@
 				B051074C1D45158F005E88A7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		B051074D1D45158F005E88A7 /* Build configuration list for PBXNativeTarget "Swift3MIDITests" */ = {
 			isa = XCConfigurationList;
@@ -442,6 +447,7 @@
 				B051074F1D45158F005E88A7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
