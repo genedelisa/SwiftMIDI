@@ -41,6 +41,8 @@ class MIDIManager : NSObject {
     
     var musicPlayer:MusicPlayer?
     
+    var musicSequence:MusicSequence?
+    
     var processingGraph:AUGraph?
     
     var samplerUnit:AudioUnit?
@@ -477,9 +479,16 @@ class MIDIManager : NSObject {
     }
     
     func playWithMusicPlayer() {
-        if let sequence = createMusicSequence() {
+
+        if self.musicSequence == nil {
+            self.musicSequence = createMusicSequence()
+            createMIDIFile(sequence: self.musicSequence!, filename: "created", ext: "mid")
+        }
+        
+        if let sequence = self.musicSequence {
             self.musicPlayer = createMusicPlayer(musicSequence: sequence)
             playMusicPlayer()
+
         } else {
             print("could not create sequence and play it")
         }
@@ -545,6 +554,281 @@ class MIDIManager : NSObject {
         }
     }
     
+    func createMIDIFile(sequence:MusicSequence, filename:String, ext:String)  {
+        
+        let documentsDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
+        if let fileURL = NSURL(fileURLWithPath: documentsDirectory).appendingPathComponent("\(filename).\(ext)") {
+            print("creating midi file at \(fileURL.absoluteString)")
+            let timeResolution = determineTimeResolution(musicSequence: sequence)
+            let status = MusicSequenceFileCreate(sequence, fileURL, .midiType, [.eraseFile], Int16(timeResolution))
+            if status != noErr {
+                checkError(status)
+            }
+        }
+    }
+    
+    
+    func determineTimeResolution(musicSequence:MusicSequence) -> UInt32 {
+        var track:MusicTrack?
+        var status = MusicSequenceGetTempoTrack(musicSequence, &track)
+        if status != noErr {
+            checkError(status)
+        }
+        
+        if let tempoTrack = track {
+            var propertyLength = UInt32(0)
+
+//            let n = UnsafeMutablePointer<Swift.Void>(nil)
+            var junk = UInt32(0)
+            status = MusicTrackGetProperty(tempoTrack,
+                                           kSequenceTrackProperty_TimeResolution,
+                                           &junk,
+                                           &propertyLength)
+            if status != noErr {
+                checkError(status)
+            }
+            
+            var timeResolution = UInt32(0)
+            status = MusicTrackGetProperty(tempoTrack,
+                                           kSequenceTrackProperty_TimeResolution,
+                                           &timeResolution,
+                                           &propertyLength)
+            if status != noErr {
+                checkError(status)
+            }
+            return timeResolution
+        } else {
+            print("error getting tempo track")
+            return 0
+        }
+    }
+
+    // the newer API play data but provide no way to create a sequence. So this is the crowbar.
+    internal func sequenceData(musicSequence:MusicSequence, resolution:Int16=480) -> NSData? {
+        
+        var data:Unmanaged<CFData>?
+        let status = MusicSequenceFileCreateData(musicSequence,
+                                                 MusicSequenceFileTypeID.midiType,
+                                                 MusicSequenceFileFlags.eraseFile,
+                                                 resolution,
+                                                 &data)
+        if status != noErr {
+            print("error turning MusicSequence into NSData")
+            checkError(status)
+            return nil
+        }
+        
+        let ns:NSData = data!.takeUnretainedValue()
+        data?.release()
+        return ns
+    }
+    
+    func addTimeSignature(musicSequence:MusicSequence) {
+        //        //FF 58 nn dd cc bb
+        //
+        //        A time signature of 4/4, with a metronome click every 1/4 note, would be encoded :
+        //        FF 58 04 04 02 18 08
+        //        There are 24 MIDI Clocks per quarter-note, hence cc=24 (0x18).
+        //
+        //        A time signature of 6/8, with a metronome click every 3rd 1/8 note, would be encoded :
+        //        FF 58 04 06 03 24 08
+        //        Remember, a 1/4 note is 24 MIDI Clocks, therefore a bar of 6/8 is 72 MIDI Clocks.
+        //        Hence 3 1/8 notes is 36 (=0x24) MIDI Clocks.
+        
+        //
+        //        nn is a byte specifying the numerator of the time signature (as notated).
+        //        dd is a byte specifying the denominator of the time signature as a negative power of 2 (ie 2 represents a quarter-note, 3 represents an eighth-note, etc).
+        //        cc is a byte specifying the number of MIDI clocks between metronome clicks.
+        //        bb is a byte specifying the number of notated 32nd-notes in a MIDI quarter-note (24 MIDI Clocks). The usual value for this parameter is 8, though some sequencers allow the user to specify that what MIDI thinks of as a quarter note, should be notated as something else.
+        
+        let numerator = UInt8(0x06)
+        let denominator = UInt8(log2(8.0))
+        let clocksBetweenMetronomeClicks = UInt8(0x24)
+        let thirtySecondsPerQuarterNote = UInt8(0x8)
+        let data = [numerator, denominator,clocksBetweenMetronomeClicks,thirtySecondsPerQuarterNote]
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = UInt8(0x58)
+        metaEvent.dataLength = UInt32(data.count)
+        
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+        var tempo:MusicTrack?
+        var status = MusicSequenceGetTempoTrack(musicSequence, &tempo)
+        checkError(status)
+        if let tempoTrack = tempo {
+            status = MusicTrackNewMetaEvent(tempoTrack, 0, &metaEvent)
+            if status != noErr {
+                print("borked adding time sig \(status)")
+                checkError(status)
+            }
+        }
+    }
+    
+    func addKeySignature(musicSequence:MusicSequence) {
+        
+        //    FF 59 02 sf mi
+        //
+        //    sf is a byte specifying the number of flats (-ve) or sharps (+ve) that identifies the key signature (-7 = 7 flats, -1 = 1 flat, 0 = key of C, 1 = 1 sharp, etc).
+        //    mi is a byte specifying a major (0) or minor (1) key.
+        
+        let sf = UInt8(2)
+        let mi = UInt8(0) // major
+        let data = [sf, mi]
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = UInt8(0x59)
+        metaEvent.dataLength = UInt32(data.count)
+        
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+
+        var tempo:MusicTrack?
+        var status = MusicSequenceGetTempoTrack(musicSequence, &tempo)
+        checkError(status)
+        if let tempoTrack = tempo {
+            status = MusicTrackNewMetaEvent(tempoTrack, 0, &metaEvent)
+            if status != noErr {
+                print("borked adding key sig \(status)")
+                checkError(status)
+            }
+        }
+    }
+
+    //FIXME: produces junk. But when inline it's fine.
+    func createCopyrightEvent(message:String) -> MIDIMetaEvent {
+        let data = [UInt8](message.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 2 // copyright
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+        return metaEvent
+    }
+
+    //FIXME: produces junk. But when inline it's fine.
+    func createNameEvent(text:String) -> MIDIMetaEvent {
+        let data = [UInt8](text.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 3 // sequence or track name
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+        return metaEvent
+    }
+    
+    internal func addCopyright(sequence:MusicSequence, text:String) {
+        //var metaEvent = createCopyrightEvent(message: text)
+        let data = [UInt8](text.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 2 // copyright
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+
+        var tempo:MusicTrack?
+        var status = MusicSequenceGetTempoTrack(sequence, &tempo)
+        checkError(status)
+        if let tempoTrack = tempo {
+            status = MusicTrackNewMetaEvent(tempoTrack, 0, &metaEvent)
+            if status != noErr {
+                print("borked \(status)")
+            }
+        }
+    }
+    
+    
+    internal func addLyric(track:MusicTrack, lyric:String, timeStamp:MusicTimeStamp) {
+        
+        let data = [UInt8](lyric.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 5 // lyric
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+        
+        let status = MusicTrackNewMetaEvent(track, timeStamp, &metaEvent)
+        if status != noErr {
+            print("Unable to name Track")
+            checkError(status)
+        }
+    }
+
+    internal func addTrackName(track:MusicTrack, name:String) {
+
+       // var metaEvent = createNameEvent(text: name)
+        let data = [UInt8](name.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 3 // sequence or track name
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+
+        let status = MusicTrackNewMetaEvent(track, MusicTimeStamp(0), &metaEvent)
+        if status != noErr {
+            print("Unable to name Track")
+            checkError(status)
+        }
+    }
+    
+    internal func addSequenceName(sequence:MusicSequence, name:String) {
+        
+       // var metaEvent = createNameEvent(text: name)
+        let data = [UInt8](name.utf8)
+        var metaEvent = MIDIMetaEvent()
+        metaEvent.metaEventType = 3 // sequence or track name
+        metaEvent.dataLength = UInt32(data.count)
+        withUnsafeMutablePointer(&metaEvent.data, {
+            pointer in
+            for i in 0 ..< data.count {
+                pointer[i] = data[i]
+            }
+        })
+        
+        // you add it to the tempo track
+        var tempo:MusicTrack?
+        var status = MusicSequenceGetTempoTrack(sequence, &tempo)
+        checkError(status)
+        if let tempoTrack = tempo {
+            status = MusicTrackNewMetaEvent(tempoTrack, 0, &metaEvent)
+            if status != noErr {
+                print("borked \(status)")
+            }
+        }
+        
+        // nope. no equivalent for sequence
+//        let result = MusicTrackNewMetaEvent(sequence, MusicTimeStamp(0), &metaEvent)
+//        if result != 0 {
+//            print("Unable to name sequence")
+//        }
+    }
+
     
     internal func createMusicSequence() -> MusicSequence? {
         
@@ -557,6 +841,14 @@ class MIDIManager : NSObject {
         
         if let sequence = musicSequence {
             
+            addSequenceName(sequence: sequence, name: "Test Sequence")
+
+            addCopyright(sequence: sequence, text: "Copyright 2016")
+            
+            addKeySignature(musicSequence: sequence)
+            
+            addTimeSignature(musicSequence: sequence)
+            
             // add a track
             var newtrack: MusicTrack?
             status = MusicSequenceNewTrack(sequence, &newtrack)
@@ -566,6 +858,11 @@ class MIDIManager : NSObject {
             }
             
             if let track = newtrack {
+                addTrackName(track: track, name: "Test Track")
+                
+                addLyric(track: track, lyric: "Meow", timeStamp: MusicTimeStamp(0))
+                
+                addLyric(track: track, lyric: "Miao", timeStamp: MusicTimeStamp(3))
                 
                 // bank select msb
                 var chanmess = MIDIChannelMessage(status: 0xB0, data1: 0, data2: 0, reserved: 0)
@@ -647,6 +944,10 @@ class MIDIManager : NSObject {
                 
                 // Let's see it
                 CAShow(UnsafeMutablePointer<MusicSequence>(sequence))
+
+                var info = MusicSequenceGetInfoDictionary(sequence)
+                print("sequence info \(info)")
+                //info[kAFInfoDictionary_Copyright] = "2016 bozosoft"
                 
                 return sequence
             }
