@@ -6,7 +6,7 @@
 [![GitHub tag](https://img.shields.io/github/tag/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub release](https://img.shields.io/github/release/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub commits](https://img.shields.io/github/commits-since/genedelisa/Swift3MIDI/1.0.0.svg)
-[![Swift 3](https://img.shields.io/badge/swift3-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
+[![Swift 3](https://img.shields.io/badge/swift3beta5-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
 
 [![Platforms OS X | iOS](https://img.shields.io/badge/Platforms-OS%20X%20%7C%20iOS-lightgray.svg?style=flat)](https://swift.org/)
 
@@ -15,7 +15,7 @@
 
 
 
-An example using Core MIDI with Swift 3 beta 3.
+An example using Core MIDI with Swift 3 beta 5.
 
 I'm using the [Fluid R3 GM Sounfont](https://musescore.org/en/handbook/soundfont) in this example. Use whatever Soundfont you like.
 (GeneralUser GS 1.442 has many problems)

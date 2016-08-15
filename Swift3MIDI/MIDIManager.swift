@@ -234,8 +234,9 @@ class MIDIManager : NSObject {
         // don't do this
         //        print("packet \(packet)")
         
-        var ap = UnsafeMutablePointer<MIDIPacket>.init(allocatingCapacity: 1)
-        ap.initialize(with:packet)
+//        var ap = UnsafeMutablePointer<MIDIPacket>.init(allocatingCapacity: 1)
+        var ap = UnsafeMutablePointer<MIDIPacket>.allocate(capacity: 1)
+        ap.initialize(to:packet)
         
         for _ in 0 ..< packets.numPackets {
             
@@ -1059,7 +1060,7 @@ class MIDIManager : NSObject {
     internal func loadSF2Preset(_ preset:UInt8)  {
         
         // this is a huge soundfont, but it is valid. The GeneralUser GS MuseScore font has problems.
-        guard let bankURL = Bundle.main.urlForResource("FluidR3 GM2-2", withExtension: "SF2") else {
+        guard let bankURL = Bundle.main.url(forResource:"FluidR3 GM2-2", withExtension: "SF2") else {
             fatalError("\"FluidR3 GM2-2.SF2\" file not found.")
         }
         
