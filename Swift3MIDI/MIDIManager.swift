@@ -11,6 +11,8 @@ import CoreMIDI
 import CoreAudio
 import AudioToolbox
 
+import AVFoundation
+
 /// The `Singleton` instance
 private let MIDIManagerInstance = MIDIManager()
 
@@ -26,6 +28,9 @@ class MIDIManager : NSObject {
     class var sharedInstance:MIDIManager {
         return MIDIManagerInstance
     }
+    
+    var sequencer:AVAudioSequencer!
+    
     
     var midiClient = MIDIClientRef()
     
@@ -76,7 +81,7 @@ class MIDIManager : NSObject {
         }
         
         var status = noErr
-        status = MIDIClientCreateWithBlock("com.rockhoppertech.MyMIDIClient", &midiClient, notifyBlock)
+        status = MIDIClientCreateWithBlock("com.rockhoppertech.MyMIDIClient" as CFString, &midiClient, notifyBlock)
         
         if status == noErr {
             print("created client \(midiClient)")
@@ -88,7 +93,7 @@ class MIDIManager : NSObject {
         
         if status == noErr {
             
-            status = MIDIInputPortCreateWithBlock(midiClient, "com.rockhoppertech.MIDIInputPort", &inputPort, readBlock)
+            status = MIDIInputPortCreateWithBlock(midiClient, "com.rockhoppertech.MIDIInputPort" as CFString, &inputPort, readBlock)
             if status == noErr {
                 print("created input port \(inputPort)")
             } else {
@@ -98,7 +103,7 @@ class MIDIManager : NSObject {
             
             
             status = MIDIOutputPortCreate(midiClient,
-                                          "com.rockhoppertech.OutputPort",
+                                          "com.rockhoppertech.OutputPort" as CFString,
                                           &outputPort)
             if status == noErr {
                 print("created output port \(outputPort)")
@@ -110,7 +115,7 @@ class MIDIManager : NSObject {
             
             // this is the sequence's destination. Remember to set background mode in info.plist
             status = MIDIDestinationCreateWithBlock(midiClient,
-                                                    "Swift3MIDI.VirtualDestination",
+                                                    "Swift3MIDI.VirtualDestination" as CFString,
                                                     &virtualDestinationEndpointRef,
                                                     MIDIPassThru)
             //                                                    readBlock)
@@ -124,7 +129,7 @@ class MIDIManager : NSObject {
             
             //use MIDIReceived to transmit MIDI messages from your virtual source to any clients connected to the virtual source
             status = MIDISourceCreate(midiClient,
-                                      "Swift3MIDI.VirtualSource",
+                                      "Swift3MIDI.VirtualSource" as CFString,
                                       &virtualSourceEndpointRef
             )
             if status != noErr {
@@ -218,11 +223,16 @@ class MIDIManager : NSObject {
     // swift 3
     // typealias MIDIReadBlock = (UnsafePointer<MIDIPacketList>, UnsafeMutablePointer<Swift.Void>?) -> Swift.Void
     
-    func MIDIPassThru(_ packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
+    func MIDIPassThru(_ packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutableRawPointer?) -> Swift.Void {
         MIDIReceived(virtualSourceEndpointRef, packetList)
     }
     
-    func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
+    // now in beta 6
+    //    public typealias MIDIReadBlock = (UnsafePointer<MIDIPacketList>, UnsafeMutableRawPointer?) -> Swift.Void
+    
+    //    func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutablePointer<Swift.Void>?) -> Swift.Void {
+    
+    func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutableRawPointer?) -> Swift.Void {
         
         //debugPrint("MyMIDIReadBlock \(packetList)")
         
@@ -234,7 +244,7 @@ class MIDIManager : NSObject {
         // don't do this
         //        print("packet \(packet)")
         
-//        var ap = UnsafeMutablePointer<MIDIPacket>.init(allocatingCapacity: 1)
+        //        var ap = UnsafeMutablePointer<MIDIPacket>.init(allocatingCapacity: 1)
         var ap = UnsafeMutablePointer<MIDIPacket>.allocate(capacity: 1)
         ap.initialize(to:packet)
         
@@ -343,7 +353,8 @@ class MIDIManager : NSObject {
         // Some aspect of the current MIDISetup has changed.  No data.  Should ignore this  message if messages 2-6 are handled.
         case .msgSetupChanged:
             print("MIDI setup changed")
-            let ptr = UnsafeMutablePointer<MIDINotification>(midiNotification)
+            let ptr = UnsafeMutablePointer<MIDINotification>(mutating: midiNotification)
+            //            let ptr = UnsafeMutablePointer<MIDINotification>(midiNotification)
             let m = ptr.pointee
             print(m)
             print("id \(m.messageID)")
@@ -355,19 +366,21 @@ class MIDIManager : NSObject {
         case .msgObjectAdded:
             
             print("added")
-            let ptr = UnsafeMutablePointer<MIDIObjectAddRemoveNotification>(midiNotification)
-            let m = ptr.pointee
-            print(m)
-            print("id \(m.messageID)")
-            print("size \(m.messageSize)")
-            print("child \(m.child)")
-            print("child type \(m.childType)")
-            showMIDIObjectType(m.childType)
-            print("parent \(m.parent)")
-            print("parentType \(m.parentType)")
-            showMIDIObjectType(m.parentType)
+            //            let ptr = UnsafeMutablePointer<MIDIObjectAddRemoveNotification>(midiNotification)
             
-            print("childName \(getDeviceName(m.child))")
+            midiNotification.withMemoryRebound(to: MIDIObjectAddRemoveNotification.self, capacity: 1) {
+                let m = $0.pointee
+                print(m)
+                print("id \(m.messageID)")
+                print("size \(m.messageSize)")
+                print("child \(m.child)")
+                print("child type \(m.childType)")
+                showMIDIObjectType(m.childType)
+                print("parent \(m.parent)")
+                print("parentType \(m.parentType)")
+                showMIDIObjectType(m.parentType)
+                print("childName \(getDeviceName(m.child))")
+            }
             
             
             break
@@ -375,17 +388,20 @@ class MIDIManager : NSObject {
         // A device, entity or endpoint was removed. Structure is MIDIObjectAddRemoveNotification.
         case .msgObjectRemoved:
             print("kMIDIMsgObjectRemoved")
-            let ptr = UnsafeMutablePointer<MIDIObjectAddRemoveNotification>(midiNotification)
-            let m = ptr.pointee
-            print(m)
-            print("id \(m.messageID)")
-            print("size \(m.messageSize)")
-            print("child \(m.child)")
-            print("child type \(m.childType)")
-            print("parent \(m.parent)")
-            print("parentType \(m.parentType)")
-            
-            print("childName \(getDeviceName(m.child))")
+            //            let ptr = UnsafeMutablePointer<MIDIObjectAddRemoveNotification>(midiNotification)
+            midiNotification.withMemoryRebound(to: MIDIObjectAddRemoveNotification.self, capacity: 1) {
+                
+                let m = $0.pointee
+                print(m)
+                print("id \(m.messageID)")
+                print("size \(m.messageSize)")
+                print("child \(m.child)")
+                print("child type \(m.childType)")
+                print("parent \(m.parent)")
+                print("parentType \(m.parentType)")
+                
+                print("childName \(getDeviceName(m.child))")
+            }
             
             
             break
@@ -394,18 +410,23 @@ class MIDIManager : NSObject {
         case .msgPropertyChanged:
             print("kMIDIMsgPropertyChanged")
             
-            let ptr = UnsafeMutablePointer<MIDIObjectPropertyChangeNotification>(midiNotification)
-            let m = ptr.pointee
-            print(m)
-            print("id \(m.messageID)")
-            print("size \(m.messageSize)")
-            print("object \(m.object)")
-            print("objectType  \(m.objectType)")
-            print("propertyName  \(m.propertyName)")
-            print("propertyName  \(m.propertyName.takeUnretainedValue())")
             
-            if m.propertyName.takeUnretainedValue() == "apple.midirtp.session" {
-                print("connected")
+            
+            //            let ptr = UnsafeMutablePointer<MIDIObjectPropertyChangeNotification>(midiNotification)
+            midiNotification.withMemoryRebound(to: MIDIObjectPropertyChangeNotification.self, capacity: 1) {
+                
+                let m = $0.pointee
+                print(m)
+                print("id \(m.messageID)")
+                print("size \(m.messageSize)")
+                print("object \(m.object)")
+                print("objectType  \(m.objectType)")
+                print("propertyName  \(m.propertyName)")
+                print("propertyName  \(m.propertyName.takeUnretainedValue())")
+                
+                if m.propertyName.takeUnretainedValue() as String == "apple.midirtp.session" {
+                    print("connected")
+                }
             }
             
             break
@@ -423,14 +444,15 @@ class MIDIManager : NSObject {
         case .msgIOError:
             print("MIDI I/O error.")
             
-            let ptr = UnsafeMutablePointer<MIDIIOErrorNotification>(midiNotification)
-            let m = ptr.pointee
-            print(m)
-            print("id \(m.messageID)")
-            print("size \(m.messageSize)")
-            print("driverDevice \(m.driverDevice)")
-            print("errorCode \(m.errorCode)")
-            
+            //let ptr = UnsafeMutablePointer<MIDIIOErrorNotification>(midiNotification)
+            midiNotification.withMemoryRebound(to: MIDIIOErrorNotification.self, capacity: 1) {
+                let m = $0.pointee
+                print(m)
+                print("id \(m.messageID)")
+                print("size \(m.messageSize)")
+                print("driverDevice \(m.driverDevice)")
+                print("errorCode \(m.errorCode)")
+            }
             break
         }
     }
@@ -480,7 +502,7 @@ class MIDIManager : NSObject {
     }
     
     func playWithMusicPlayer() {
-
+        
         if self.musicSequence == nil {
             self.musicSequence = createMusicSequence()
             createMIDIFile(sequence: self.musicSequence!, filename: "created", ext: "mid")
@@ -489,7 +511,7 @@ class MIDIManager : NSObject {
         if let sequence = self.musicSequence {
             self.musicPlayer = createMusicPlayer(musicSequence: sequence)
             playMusicPlayer()
-
+            
         } else {
             print("could not create sequence and play it")
         }
@@ -561,7 +583,7 @@ class MIDIManager : NSObject {
         if let fileURL = NSURL(fileURLWithPath: documentsDirectory).appendingPathComponent("\(filename).\(ext)") {
             print("creating midi file at \(fileURL.absoluteString)")
             let timeResolution = determineTimeResolution(musicSequence: sequence)
-            let status = MusicSequenceFileCreate(sequence, fileURL, .midiType, [.eraseFile], Int16(timeResolution))
+            let status = MusicSequenceFileCreate(sequence, fileURL as CFURL, .midiType, [.eraseFile], Int16(timeResolution))
             if status != noErr {
                 checkError(status)
             }
@@ -578,8 +600,8 @@ class MIDIManager : NSObject {
         
         if let tempoTrack = track {
             var propertyLength = UInt32(0)
-
-//            let n = UnsafeMutablePointer<Swift.Void>(nil)
+            
+            //            let n = UnsafeMutablePointer<Swift.Void>(nil)
             var junk = UInt32(0)
             status = MusicTrackGetProperty(tempoTrack,
                                            kSequenceTrackProperty_TimeResolution,
@@ -603,7 +625,7 @@ class MIDIManager : NSObject {
             return 0
         }
     }
-
+    
     // the newer API play data but provide no way to create a sequence. So this is the crowbar.
     internal func sequenceData(musicSequence:MusicSequence, resolution:Int16=480) -> NSData? {
         
@@ -651,12 +673,20 @@ class MIDIManager : NSObject {
         metaEvent.metaEventType = UInt8(0x58)
         metaEvent.dataLength = UInt32(data.count)
         
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
             }
         })
+        
+        //        withUnsafeMutablePointer(&metaEvent.data, {
+        //            pointer in
+        //            for i in 0 ..< data.count {
+        //                pointer[i] = data[i]
+        //            }
+        //        })
+        
         var tempo:MusicTrack?
         var status = MusicSequenceGetTempoTrack(musicSequence, &tempo)
         checkError(status)
@@ -683,13 +713,13 @@ class MIDIManager : NSObject {
         metaEvent.metaEventType = UInt8(0x59)
         metaEvent.dataLength = UInt32(data.count)
         
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
             }
         })
-
+        
         var tempo:MusicTrack?
         var status = MusicSequenceGetTempoTrack(musicSequence, &tempo)
         checkError(status)
@@ -701,14 +731,14 @@ class MIDIManager : NSObject {
             }
         }
     }
-
+    
     //FIXME: produces junk. But when inline it's fine.
     func createCopyrightEvent(message:String) -> MIDIMetaEvent {
         let data = [UInt8](message.utf8)
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 2 // copyright
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
@@ -716,14 +746,14 @@ class MIDIManager : NSObject {
         })
         return metaEvent
     }
-
+    
     //FIXME: produces junk. But when inline it's fine.
     func createNameEvent(text:String) -> MIDIMetaEvent {
         let data = [UInt8](text.utf8)
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 3 // sequence or track name
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
@@ -738,13 +768,13 @@ class MIDIManager : NSObject {
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 2 // copyright
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
             }
         })
-
+        
         var tempo:MusicTrack?
         var status = MusicSequenceGetTempoTrack(sequence, &tempo)
         checkError(status)
@@ -763,7 +793,7 @@ class MIDIManager : NSObject {
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 5 // lyric
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
@@ -776,21 +806,21 @@ class MIDIManager : NSObject {
             checkError(status)
         }
     }
-
+    
     internal func addTrackName(track:MusicTrack, name:String) {
-
-       // var metaEvent = createNameEvent(text: name)
+        
+        // var metaEvent = createNameEvent(text: name)
         let data = [UInt8](name.utf8)
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 3 // sequence or track name
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
             }
         })
-
+        
         let status = MusicTrackNewMetaEvent(track, MusicTimeStamp(0), &metaEvent)
         if status != noErr {
             print("Unable to name Track")
@@ -800,12 +830,12 @@ class MIDIManager : NSObject {
     
     internal func addSequenceName(sequence:MusicSequence, name:String) {
         
-       // var metaEvent = createNameEvent(text: name)
+        // var metaEvent = createNameEvent(text: name)
         let data = [UInt8](name.utf8)
         var metaEvent = MIDIMetaEvent()
         metaEvent.metaEventType = 3 // sequence or track name
         metaEvent.dataLength = UInt32(data.count)
-        withUnsafeMutablePointer(&metaEvent.data, {
+        withUnsafeMutablePointer(to: &metaEvent.data, {
             pointer in
             for i in 0 ..< data.count {
                 pointer[i] = data[i]
@@ -824,12 +854,12 @@ class MIDIManager : NSObject {
         }
         
         // nope. no equivalent for sequence
-//        let result = MusicTrackNewMetaEvent(sequence, MusicTimeStamp(0), &metaEvent)
-//        if result != 0 {
-//            print("Unable to name sequence")
-//        }
+        //        let result = MusicTrackNewMetaEvent(sequence, MusicTimeStamp(0), &metaEvent)
+        //        if result != 0 {
+        //            print("Unable to name sequence")
+        //        }
     }
-
+    
     
     internal func createMusicSequence() -> MusicSequence? {
         
@@ -843,7 +873,7 @@ class MIDIManager : NSObject {
         if let sequence = musicSequence {
             
             addSequenceName(sequence: sequence, name: "Test Sequence")
-
+            
             addCopyright(sequence: sequence, text: "Copyright 2016")
             
             addKeySignature(musicSequence: sequence)
@@ -917,8 +947,12 @@ class MIDIManager : NSObject {
                 
                 //public typealias MusicSequenceUserCallback = @convention(c) (UnsafeMutablePointer<Swift.Void>?, MusicSequence, MusicTrack, MusicTimeStamp, UnsafePointer<MusicEventUserData>, MusicTimeStamp, MusicTimeStamp) -> Swift.Void
                 
-                let sequencerCallback: MusicSequenceUserCallback = {
-                    (clientData:UnsafeMutablePointer<Swift.Void>?,
+                //in beta 6
+                //                public typealias MusicSequenceUserCallback = @convention(c) (UnsafeMutableRawPointer?, MusicSequence, MusicTrack, MusicTimeStamp, UnsafePointer<MusicEventUserData>, MusicTimeStamp, MusicTimeStamp) -> Swift.Void
+                
+                
+                let sequencerCallback: MusicSequenceUserCallback =  {
+                    (clientData:UnsafeMutableRawPointer?,
                     sequence:MusicSequence,
                     track:MusicTrack,
                     eventTime:MusicTimeStamp,
@@ -945,8 +979,8 @@ class MIDIManager : NSObject {
                 
                 // Let's see it
                 CAShow(UnsafeMutablePointer<MusicSequence>(sequence))
-
-                var info = MusicSequenceGetInfoDictionary(sequence)
+                
+                let info = MusicSequenceGetInfoDictionary(sequence)
                 print("sequence info \(info)")
                 //info[kAFInfoDictionary_Copyright] = "2016 bozosoft"
                 
@@ -1020,7 +1054,7 @@ class MIDIManager : NSObject {
             var status = AUGraphIsInitialized(graph, &outIsInitialized)
             print("isinit status is \(status)")
             print("bool is \(outIsInitialized)")
-
+            
             if outIsInitialized == false {
                 status = AUGraphInitialize(graph)
                 checkError(status)
@@ -1071,12 +1105,12 @@ class MIDIManager : NSObject {
         //            print("\"GeneralUser GS MuseScore v1.442.sf2\" file not found.")
         //        }
         
-        var instdata = AUSamplerInstrumentData(fileURL: Unmanaged.passUnretained(bankURL),
-                                              // instrumentType: UInt8(kInstrumentType_DLSPreset),
-                                               instrumentType: UInt8(kInstrumentType_SF2Preset),
-                                               bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
-                                               bankLSB: UInt8(kAUSampler_DefaultBankLSB),
-                                               presetID: preset)
+        var instdata = AUSamplerInstrumentData(fileURL: Unmanaged.passUnretained(bankURL as CFURL),
+                                               // instrumentType: UInt8(kInstrumentType_DLSPreset),
+            instrumentType: UInt8(kInstrumentType_SF2Preset),
+            bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
+            bankLSB: UInt8(kAUSampler_DefaultBankLSB),
+            presetID: preset)
         
         if let sampler = self.samplerUnit {
             let status = AudioUnitSetProperty(
@@ -1085,7 +1119,7 @@ class MIDIManager : NSObject {
                 AudioUnitScope(kAudioUnitScope_Global),
                 0,
                 &instdata,
-                UInt32(sizeof(AUSamplerInstrumentData.self)))
+                UInt32(MemoryLayout<AUSamplerInstrumentData>.size))
             checkError(status)
         }
     }
@@ -1133,7 +1167,7 @@ class MIDIManager : NSObject {
             printProperties(midiDevice)
         }
     }
-
+    
     func allDeviceProps() {
         
         let n = MIDIGetNumberOfDevices()
@@ -1373,41 +1407,44 @@ class MIDIManager : NSObject {
     ///  - parameter n: The encoded 4char
     ///
     ///  - returns: The String representation.
-    class func stringFrom4(n: Int) -> String {
+    class func stringFrom4(n: Int) -> String? {
         
-        var scalar = UnicodeScalar((n >> 24) & 255)
-        if !scalar.isASCII {
-            return ""
+        if var scalar = UnicodeScalar((n >> 24) & 255) {
+            if !scalar.isASCII {
+                return ""
+            }
+            var s = String(scalar)
+            
+            scalar = UnicodeScalar((n >> 16) & 255)!
+            if !scalar.isASCII {
+                return ""
+            }
+            s += String(scalar)
+            
+            
+            scalar = UnicodeScalar((n >> 8) & 255)!
+            if !scalar.isASCII {
+                return ""
+            }
+            s += String(scalar)
+            
+            scalar = UnicodeScalar(n & 255)!
+            if !scalar.isASCII {
+                return ""
+            }
+            s += String(scalar)
+            
+            return s
         }
-        var s = String(scalar)
-        
-        scalar = UnicodeScalar((n >> 16) & 255)
-        if !scalar.isASCII {
-            return ""
-        }
-        s.append(scalar)
-        
-        scalar = UnicodeScalar((n >> 8) & 255)
-        if !scalar.isASCII {
-            return ""
-        }
-        s.append(scalar)
-        
-        scalar = UnicodeScalar(n & 255)
-        if !scalar.isASCII {
-            return ""
-        }
-        s.append(scalar)
-        
-        return s
+        return nil
     }
     
     ///  Create a String from an encoded 4char.
     ///
     ///  - parameter status: an `OSStatus` containing the encoded 4char.
     ///
-    ///  - returns: The String representation.
-    class func stringFrom4(status: OSStatus) -> String {
+    ///  - returns: The String representation. Might be nil.
+    class func stringFrom4(status: OSStatus) -> String? {
         let n = Int(status)
         return stringFrom4(n:n)
     }
