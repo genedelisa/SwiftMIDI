@@ -6,16 +6,18 @@
 [![GitHub tag](https://img.shields.io/github/tag/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub release](https://img.shields.io/github/release/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub commits](https://img.shields.io/github/commits-since/genedelisa/Swift3MIDI/1.0.0.svg)
-[![Swift 3](https://img.shields.io/badge/swift3beta5-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
+[![Swift 3](https://img.shields.io/badge/swift3beta6-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
 
-[![Platforms OS X | iOS](https://img.shields.io/badge/Platforms-OS%20X%20%7C%20iOS-lightgray.svg?style=flat)](https://swift.org/)
+[![Platforms iOS](https://img.shields.io/badge/Platforms-iOS-lightgray.svg?style=flat)](https://swift.org/)
 
 [![Sponsors](https://img.shields.io/badge/Sponsors-Rockhopper%20Technologies-orange.svg?style=flat)](http://www.rockhoppertech.com/)
 [![Twitter @GeneDeLisaDev](https://img.shields.io/twitter/follow/GeneDeLisaDev.svg?style=social)](https://twitter.com/GeneDeLisaDev)
 
 
 
-An example using Core MIDI with Swift 3 beta 5.
+An example using Core MIDI with Swift 3. Updated for beta 6.
+
+There are still many changes between beta versions. I'm sure it will be that way until general release.
 
 I'm using the [Fluid R3 GM Sounfont](https://musescore.org/en/handbook/soundfont) in this example. Use whatever Soundfont you like.
 (GeneralUser GS 1.442 has many problems)
