@@ -7,8 +7,11 @@
 //
 
 import UIKit
+import os.log
 
 class ViewController: UIViewController {
+
+    static let uiLog = OSLog(subsystem: "com.rockhoppertech.Swift3MIDI", category: "UI")
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,6 +24,8 @@ class ViewController: UIViewController {
     }
 
     @IBAction func playAction(_ sender: UIButton) {
+        os_log("playing with MusicPlayer", log: ViewController.uiLog, type: .info)
+        
         MIDIManager.sharedInstance.playWithMusicPlayer()
     }
 

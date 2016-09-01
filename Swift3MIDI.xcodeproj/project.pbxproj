@@ -50,6 +50,7 @@
 		B05107501D4515AB005E88A7 /* MIDIManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MIDIManager.swift; sourceTree = "<group>"; };
 		B05107541D451E90005E88A7 /* FluidR3 GM2-2.SF2 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FluidR3 GM2-2.SF2"; sourceTree = "<group>"; };
 		B08C8BEB1D7856BE000DE73B /* MIDIPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MIDIPlayground.playground; sourceTree = "<group>"; };
+		B08C8BEC1D787D36000DE73B /* MIDIClassPlayground.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = MIDIClassPlayground.playground; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +103,7 @@
 				B051072B1D45158F005E88A7 /* Supporting Files */,
 				B033BB461D4643460020D287 /* Package.swift */,
 				B08C8BEB1D7856BE000DE73B /* MIDIPlayground.playground */,
+				B08C8BEC1D787D36000DE73B /* MIDIClassPlayground.playground */,
 			);
 			path = Swift3MIDI;
 			sourceTree = "<group>";

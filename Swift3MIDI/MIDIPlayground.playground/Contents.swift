@@ -38,15 +38,14 @@ if status == noErr {
 }
 
 // cannot set up input port in a playground it seems
+func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutableRawPointer?) -> Swift.Void {
+    
+    let packets = packetList.pointee
+    let packet:MIDIPacket = packets.packet
+    // etc.
+}
 
-//func MyMIDIReadBlock(packetList: UnsafePointer<MIDIPacketList>, srcConnRefCon: UnsafeMutableRawPointer?) -> Swift.Void {
-//    
-//    let packets = packetList.pointee
-//    let packet:MIDIPacket = packets.packet
-//    // etc.
-//}
-//
-//var readBlock = MyMIDIReadBlock
+var readBlock:MIDIReadBlock = MyMIDIReadBlock
 
 if status == noErr {
 
