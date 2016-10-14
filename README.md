@@ -6,7 +6,7 @@
 [![GitHub tag](https://img.shields.io/github/tag/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub release](https://img.shields.io/github/release/genedelisa/Swift3MIDI.svg)](https://github.com/genedelisa/Swift3MIDI/)
 [![GitHub commits](https://img.shields.io/github/commits-since/genedelisa/Swift3MIDI/1.0.0.svg)
-[![Swift 3](https://img.shields.io/badge/swift3beta6-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
+[![Swift 3](https://img.shields.io/badge/swift3-compatible-4BC51D.svg?style=flat")](https://developer.apple.com/swift)
 
 [![Platforms iOS](https://img.shields.io/badge/Platforms-iOS-lightgray.svg?style=flat)](https://swift.org/)
 
@@ -15,9 +15,12 @@
 
 
 
-An example using Core MIDI with Swift 3. Updated for beta 6.
+An example using Core MIDI with Swift 3.
 
-There are still many changes between beta versions. I'm sure it will be that way until general release.
+There are also two hacky Playgrounds. One works. The other one tries to create an input port and fails. (makes sense actually)
+
+Meta text events are a mess with that tuple nonsense. That will be another blog post.
+
 
 I'm using the [Fluid R3 GM Sounfont](https://musescore.org/en/handbook/soundfont) in this example. Use whatever Soundfont you like.
 (GeneralUser GS 1.442 has many problems)

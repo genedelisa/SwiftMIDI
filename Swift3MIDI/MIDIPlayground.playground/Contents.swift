@@ -1,6 +1,6 @@
 //: MIDIPlayground - sloppy hack just to see if MIDI works in a playground
 
-import UIKit
+//import UIKit
 import CoreMIDI
 import AudioToolbox
 
@@ -50,12 +50,12 @@ var readBlock:MIDIReadBlock = MyMIDIReadBlock
 if status == noErr {
 
     // doesn't like this
-//    status = MIDIInputPortCreateWithBlock(midiClient, "com.rockhoppertech.MIDIInputPort" as CFString, &inputPort, readBlock)
-//    if status == noErr {
-//        print("created input port \(inputPort)")
-//    } else {
-//        print("error creating input port : \(status)")
-//    }
+    status = MIDIInputPortCreateWithBlock(midiClient, "com.rockhoppertech.MIDIInputPort" as CFString, &inputPort, readBlock)
+    if status == noErr {
+        print("created input port \(inputPort)")
+    } else {
+        print("error creating input port : \(status)")
+    }
     
     
     status = MIDIOutputPortCreate(midiClient,
@@ -66,21 +66,24 @@ if status == noErr {
     } else {
         print("error creating output port : \(status)")
     }
+    
+
+    
 }
 
 // doesn't enable it. this code works in an app
-func enableNetwork() {
-    MIDINetworkSession.default().isEnabled = true
-    MIDINetworkSession.default().connectionPolicy = .anyone
-    
-    print("net session enabled \(MIDINetworkSession.default().isEnabled)")
-    print("net session networkPort \(MIDINetworkSession.default().networkPort)")
-    print("net session networkName \(MIDINetworkSession.default().networkName)")
-    print("net session localName \(MIDINetworkSession.default().localName)")
-    
-}
-
-enableNetwork()
+//func enableNetwork() {
+//    MIDINetworkSession.default().isEnabled = true
+//    MIDINetworkSession.default().connectionPolicy = .anyone
+//    
+//    print("net session enabled \(MIDINetworkSession.default().isEnabled)")
+//    print("net session networkPort \(MIDINetworkSession.default().networkPort)")
+//    print("net session networkName \(MIDINetworkSession.default().networkName)")
+//    print("net session localName \(MIDINetworkSession.default().localName)")
+//    
+//}
+//
+//enableNetwork()
 
 
 
@@ -100,7 +103,6 @@ internal func createMusicSequence() -> MusicSequence? {
         status = MusicSequenceNewTrack(sequence, &newtrack)
         if status != noErr {
             print("error creating track \(status)")
-
         }
         
         if let track = newtrack {
@@ -130,7 +132,7 @@ internal func createMusicSequence() -> MusicSequence? {
             
             // now make some notes and put them on the track
             var beat = MusicTimeStamp(0.0)
-            let duration = Float32(1.0)
+            let duration = Float(1.0)
             for i:UInt8 in 60...72 {
                 var mess = MIDINoteMessage(channel: 0,
                                            note: i,
@@ -140,7 +142,6 @@ internal func createMusicSequence() -> MusicSequence? {
                 status = MusicTrackNewMIDINoteEvent(track, beat, &mess)
                 if status != noErr {
                     print("creating new midi note event \(status)")
-
                 }
                 beat += 1
             }

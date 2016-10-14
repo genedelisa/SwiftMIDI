@@ -771,7 +771,9 @@ class MIDIManager : NSObject {
         return metaEvent
     }
     
-    //FIXME: produces junk. But when inline it's fine.
+    //FIXME: produces junk. 
+    // But when inline ( addTrackName(track:name:) ) it's fine because MusicTrackNewMetaEvent copies the text.
+    // (data is popped off the stack on return. the fix is to alloc the memory.)
     func createNameEvent(text:String) -> MIDIMetaEvent {
         let data = [UInt8](text.utf8)
         var metaEvent = MIDIMetaEvent()
@@ -1191,6 +1193,8 @@ class MIDIManager : NSObject {
     func allExternalDeviceProps() {
         
         let n = MIDIGetNumberOfExternalDevices()
+        os_log("external devices %d", log: MIDIManager.midiLog, type: .debug, n)
+
         for i in 0 ..< n {
             let midiDevice = MIDIGetExternalDevice(i)
             printProperties(midiDevice)
@@ -1200,6 +1204,8 @@ class MIDIManager : NSObject {
     func allDeviceProps() {
         
         let n = MIDIGetNumberOfDevices()
+        os_log("number of devices %d", log: MIDIManager.midiLog, type: .debug, n)
+
         for i in 0 ..< n {
             let midiDevice = MIDIGetDevice(i)
             printProperties(midiDevice)
@@ -1208,6 +1214,8 @@ class MIDIManager : NSObject {
     
     func allDestinationProps() {
         let numberOfDestinations  = MIDIGetNumberOfDestinations()
+        os_log("destinations %d", log: MIDIManager.midiLog, type: .debug, numberOfDestinations)
+
         for i in 0 ..< numberOfDestinations {
             let endpoint = MIDIGetDestination(i)
             printProperties(endpoint)
@@ -1216,6 +1224,8 @@ class MIDIManager : NSObject {
     
     func allSourceProps() {
         let numberOfSources  = MIDIGetNumberOfSources()
+        os_log("numberOfSources %d", log: MIDIManager.midiLog, type: .debug, numberOfSources)
+
         for i in 0 ..< numberOfSources {
             let endpoint = MIDIGetSource(i)
             printProperties(endpoint)
@@ -1228,8 +1238,14 @@ class MIDIManager : NSObject {
         checkError(status)
         
         if let midiProperties: CFPropertyList = unmanagedProperties?.takeUnretainedValue() {
-            if let midiDictionary = midiProperties as? NSDictionary {
-                os_log("MIDI properties %@", log: MIDIManager.midiLog, type: .debug, midiDictionary)
+            if let midiDictionary = midiProperties as? Dictionary<String, Any> {
+                os_log("MIDI properties %{public}@", log: MIDIManager.midiLog, type: .debug, midiDictionary)
+                for (key, value) in midiDictionary {
+                    print("key '\(key)', value '\(value)'")
+                    // what a mess. and the public doesn't really help here.
+                    os_log("key %{public}@ value %{public}@", log: MIDIManager.midiLog, type: .debug, key, value as! CVarArg)
+                }
+
             }
         } else {
             os_log("Couldn't load properties for %@", log: MIDIManager.midiLog, type: .error, midiobject)
