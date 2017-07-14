@@ -392,7 +392,7 @@ class MIDIManager : NSObject {
                 print("parent \(m.parent)")
                 print("parentType \(m.parentType)")
                 showMIDIObjectType(m.parentType)
-                print("childName \(getDeviceName(m.child))")
+                print("childName \(String(describing: getDeviceName(m.child)))")
             }
             
             
@@ -413,7 +413,7 @@ class MIDIManager : NSObject {
                 print("parent \(m.parent)")
                 print("parentType \(m.parentType)")
                 
-                print("childName \(getDeviceName(m.child))")
+                print("childName \(String(describing: getDeviceName(m.child)))")
             }
             
             
